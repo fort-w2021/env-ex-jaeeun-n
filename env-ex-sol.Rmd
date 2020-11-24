@@ -1,0 +1,50 @@
+# Umgebungen umgibt unglaubliches
+
+Lesen Sie das ["Environments"](https://adv-r.hadley.nz/environments.html)-Kapitel aus *Advanced R Programming* aufmerksam durch. 
+
+Bearbeiten Sie die folgenden, teilweise von dort übernommenen Aufgaben:
+
+a) Inwiefern unterscheiden sich in R Listen (`list`) von `environment`s?
+
+Anders als in Listen gilt in Environments:  
+- Alle Elemente müssen einen Namen haben.  
+- Die Reihenfolge der Elemente spielt keine Rolle.  
+- Environments haben “Eltern”.  
+- Environments referenzieren auf Objekte und erstellen keine Kopien (reference semantics).
+
+b) Wo suchen `ls()` und `rm()` wenn nicht explizit ein `environment` angegeben wird?
+
+Sie suchen in der Umgebung, in der man sich aktuell befindet.
+
+c) Wo legt `<-` eine (neue) `binding` an? Wo `<<-`?
+
+“<-” legt in der Umgebung, in der man sich befindet, an und “<<-” in einem der Eltern-Umgebungen.
+
+d) Schreiben sie eine modifizierte Version `anywhere()` der Funktion `where()` aus dem `pryr`-Paket (**nicht** der im Buch definierten Funktion `where`), die *alle* Umgebungen im Suchpfad die eine Variable des gegebenen Namens enthalten in Form einer Liste zurückgibt. Überprüfen Sie ihre Implementation mit `test-env-anywhere.R`.
+
+```{r, where}
+pryr::where
+```
+
+*Hinweis:* Die Funktion `to_env()`, die in `pryr::where()` benutzt wird wird nicht von `pryr` exportiert. Sie können die Funktion trotzdem mittels `pryr:::to_env()` aufrufen.
+
+```{r, 1d}
+where_path <- function(name, env = parent.frame(), children = list()) 
+{
+    stopifnot(is.character(name), length(name) == 1)
+    env <- pryr:::to_env(env)
+    if (identical(env, emptyenv())) {
+        stop("Can't find ", name, call. = FALSE)
+    }
+    if (exists(name, env, inherits = FALSE)) {
+        env_path <- append(children, env)
+        names(env_path) <- c(paste("child", length(children):1, sep = "_"), 
+                             "object_found_in")
+        env_path
+    }
+    else {
+        children <- append(children, env)
+        where_path(name, parent.env(env), children = children)
+    }
+}
+```
